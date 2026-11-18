@@ -8,7 +8,7 @@ A simple packet-capture UI built with NiceGUI and scapy.
 
 - Live packet capture using scapy running in a background thread.
 - NiceGUI frontend shows a compact table of captured packets, newest first, with time, source, destination, protocol and scapy's summary line.
-- A text filter matches on source, destination or summary. A switch pauses table updates, and a button clears the captured rows.
+- A text filter matches on source, destination or summary. A switch pauses table updates, and a button clears the captured rows. The filter and the pause switch apply to one browser tab. The captured rows are shared by all tabs.
 
 ## Quick start
 
@@ -49,10 +49,10 @@ Packet capture usually needs elevated privileges: root or the `CAP_NET_RAW` capa
 
 ## How it works
 
-`app/main.py` starts `scapy.sniff` in a daemon thread. The callback puts each packet on a queue. A NiceGUI timer drains the queue once a second, converts each packet to a row and updates the table, so the UI is only touched from the NiceGUI event loop. The table keeps the most recent 5000 rows.
+`main()` in `app/main.py` starts `scapy.sniff` in a daemon thread and then the NiceGUI server. The sniff callback converts each packet to a row and adds it to a lock-protected store that keeps the most recent 5000 rows. Each browser tab gets its own page with a timer that runs once a second and copies the store into the table when the store has changed, so the UI is only touched from the NiceGUI event loop. Importing `app.main` starts neither the sniffer nor the server.
 
-- `app/main.py`: capture thread, row conversion, timer and server entry point
-- `app/frontend.py`: page layout and filter controls
+- `app/main.py`: capture thread, row conversion, row store, page function and server entry point
+- `app/frontend.py`: page layout, controls and the filter function
 - `app/ui_assets.py`: CSS and the light/dark theme script
 
 ## Tests
@@ -63,10 +63,10 @@ Run the test suite (from the repo root):
 python -m pytest -q
 ```
 
-There are two tests, both for the packet-to-row conversion. The CI workflow at `.github/workflows/ci.yml` runs pytest on push and pull request.
+There are ten tests. They cover the packet-to-row conversion on scapy packets, the row store, the filter function, and that importing `app.main` does not start the sniffer. The CI workflow at `.github/workflows/ci.yml` runs pytest on push and pull request.
 
 ## Limitations
 
 - The Proto column names only TCP and UDP. Other IPv4 packets show the IP protocol number, and non-IPv4 packets such as ARP and IPv6 show `-` for source, destination and protocol.
-- Pausing stops table updates, not capture. Packets keep queueing in memory until updates resume.
+- Pausing stops table updates, not capture. Rows captured while paused appear when updates resume, up to the 5000-row limit.
 - There is no interface selection or capture filter. scapy sniffs on its default interface.
