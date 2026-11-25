@@ -63,7 +63,7 @@ Run the test suite (from the repo root):
 python -m pytest -q
 ```
 
-There are ten tests. They cover the packet-to-row conversion on scapy packets, the row store, the filter function, and that importing `app.main` does not start the sniffer. The CI workflow at `.github/workflows/ci.yml` runs pytest on push and pull request.
+The tests cover the packet-to-row conversion on scapy packets, the row store, the filter function, and that importing `app.main` does not start the sniffer. The CI workflow at `.github/workflows/ci.yml` runs pytest on push and pull request.
 
 ## Limitations
 
